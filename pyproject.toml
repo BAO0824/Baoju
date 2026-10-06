@@ -1,0 +1,13 @@
+[project]
+name = "baoju"
+version = "0.1.0"
+description = "Baoju floor-plan recognition and editable geometry prototype"
+requires-python = ">=3.10,<3.13"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110

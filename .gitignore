@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+models/Raster2Seq/
+models/checkpoints/
+tmp/
