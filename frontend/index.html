@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Baoju 寶居｜格局辨識工作台</title>
+    <meta
+      name="description"
+      content="Baoju 寶居：把格局圖轉成可校正、可編輯的空間幾何。"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Baoju 首頁">
+        <span class="brand-mark">B</span>
+        <span><strong>Baoju 寶居</strong><small>格局辨識工作台</small></span>
+      </a>
+      <div class="topbar-actions">
+        <span id="saveState" class="save-state">尚未載入專案</span>
+        <button id="downloadButton" class="button ghost" type="button" disabled>匯出 .baoju</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel left-panel">
+        <section>
+          <p class="eyebrow">01 匯入</p>
+          <h1>從一張格局圖開始</h1>
+          <p class="muted">支援 PNG、JPG、WEBP。辨識結果仍需比例校正與人工確認。</p>
+          <label class="drop-zone" id="dropZone">
+            <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+            <span class="drop-icon">＋</span>
+            <strong>選擇格局圖</strong>
+            <small>或拖曳圖片到這裡</small>
+          </label>
+          <button id="recognizeButton" class="button primary wide" type="button" disabled>
+            執行 AI 格局辨識
+          </button>
+          <div id="providerCard" class="status-card loading" role="status">
+            <span class="status-dot"></span>
+            <div><strong>正在確認 AI 狀態</strong><small>連線到辨識服務…</small></div>
+          </div>
+        </section>
+
+        <section class="divider-section">
+          <p class="eyebrow">開發／復原</p>
+          <label class="button ghost wide file-button">
+            匯入 Baoju JSON
+            <input id="jsonInput" type="file" accept="application/json,.baoju" hidden />
+          </label>
+          <label class="range-row">
+            <span>原圖透明度</span>
+            <input id="opacityInput" type="range" min="0" max="100" value="42" />
+          </label>
+        </section>
+
+        <section id="calibrationPanel" class="divider-section" hidden>
+          <p class="eyebrow">02 比例校正</p>
+          <h2>指定一段已知距離</h2>
+          <p class="muted" id="calibrationHint">按「選取兩點」，再到圖上依序點兩個端點。</p>
+          <button id="pickCalibrationButton" class="button ghost wide" type="button">選取兩點</button>
+          <label class="field">
+            <span>真實距離（mm）</span>
+            <input id="distanceInput" type="number" min="1" step="1" placeholder="例如 2800" />
+          </label>
+          <button id="applyCalibrationButton" class="button primary wide" type="button" disabled>套用比例</button>
+        </section>
+      </aside>
+
+      <section class="canvas-shell" aria-label="格局畫布">
+        <div class="canvas-toolbar">
+          <div class="segmented" role="group" aria-label="顯示模式">
+            <button class="active" data-view="overlay" type="button">原圖＋結果</button>
+            <button data-view="image" type="button">只看原圖</button>
+            <button data-view="geometry" type="button">只看結果</button>
+          </div>
+          <span id="canvasMeta" class="canvas-meta">尚未選擇圖片</span>
+        </div>
+        <div id="emptyState" class="empty-state">
+          <div class="empty-home">⌂</div>
+          <h2>上傳你的格局圖</h2>
+          <p>AI 結果會在這裡疊回原圖，方便逐面牆確認。</p>
+        </div>
+        <svg id="floorplanCanvas" class="floorplan-canvas" hidden aria-label="可編輯格局">
+          <image id="sourceImage" x="0" y="0" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" />
+          <g id="roomLayer"></g>
+          <g id="wallLayer"></g>
+          <g id="openingLayer"></g>
+          <g id="calibrationLayer"></g>
+        </svg>
+        <div id="toast" class="toast" hidden></div>
+      </section>
+
+      <aside class="panel inspector">
+        <section>
+          <p class="eyebrow">檢查結果</p>
+          <div id="modelSummary" class="summary-grid">
+            <div><strong>—</strong><span>房間</span></div>
+            <div><strong>—</strong><span>牆</span></div>
+            <div><strong>—</strong><span>門窗</span></div>
+          </div>
+        </section>
+
+        <section id="wallInspector" class="divider-section" hidden>
+          <p class="eyebrow">已選取牆體</p>
+          <h2 id="wallTitle">牆</h2>
+          <label class="field">
+            <span id="lengthLabel">長度</span>
+            <input id="wallLengthInput" type="number" min="1" step="1" />
+          </label>
+          <label class="field">
+            <span>牆厚（mm）</span>
+            <input id="wallThicknessInput" type="number" min="50" step="10" placeholder="校正後設定" />
+          </label>
+          <p class="muted small">修改長度會移動共用端點，相連牆會一起更新，不會只拉長一塊矩形。</p>
+        </section>
+
+        <section id="issuesSection" class="divider-section" hidden>
+          <p class="eyebrow">待確認事項</p>
+          <div id="issuesList" class="issues-list"></div>
+        </section>
+
+        <section class="truth-note">
+          <strong>目前狀態</strong>
+          <p>這是 v0.6 前置整合版。只有 Raster2Seq 真正完成 inference，才會顯示辨識結果；不會用黑線偵測替代。</p>
+        </section>
+      </aside>
+    </main>
+
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>
