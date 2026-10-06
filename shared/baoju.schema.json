@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baoju.app/schema/baoju-1.0.json",
+  "title": "Baoju canonical geometry 1.0",
+  "description": "Editable, topology-aware floor-plan geometry. Coordinates remain px until known-distance calibration and become mm afterward.",
+  "type": "object",
+  "required": ["version", "source", "coordinateSpace", "calibration", "nodes", "walls", "openings", "rooms", "issues"],
+  "properties": {
+    "version": { "const": "1.0" },
+    "source": {
+      "type": "object",
+      "required": ["filename", "mimeType", "width", "height", "sha256"],
+      "properties": {
+        "filename": { "type": "string" },
+        "mimeType": { "type": "string" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "coordinateSpace": {
+      "type": "object",
+      "required": ["width", "height", "imageFit"],
+      "properties": {
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "imageFit": { "enum": ["contain", "stretch"] }
+      },
+      "additionalProperties": false
+    },
+    "calibration": {
+      "type": "object",
+      "required": ["status", "coordinateUnit", "mmPerUnit"],
+      "properties": {
+        "status": { "enum": ["required", "calibrated"] },
+        "coordinateUnit": { "enum": ["px", "mm"] },
+        "mmPerUnit": { "type": ["number", "null"], "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+    "walls": { "type": "array", "items": { "$ref": "#/$defs/wall" } },
+    "openings": { "type": "array", "items": { "$ref": "#/$defs/opening" } },
+    "rooms": { "type": "array", "items": { "$ref": "#/$defs/room" } },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "point": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" } },
+      "additionalProperties": false
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "x", "y"],
+      "properties": {
+        "id": { "type": "string" }, "x": { "type": "number" }, "y": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "wall": {
+      "type": "object",
+      "required": ["id", "startNode", "endNode", "thicknessMm", "heightMm", "confidence", "source", "roomIds"],
+      "properties": {
+        "id": { "type": "string" },
+        "startNode": { "type": "string" },
+        "endNode": { "type": "string" },
+        "thicknessMm": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "heightMm": { "type": "number", "exclusiveMinimum": 0 },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source": { "enum": ["ai", "user", "system"] },
+        "roomIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "opening": {
+      "type": "object",
+      "required": ["id", "type", "wallId", "offset", "width", "heightMm", "sillHeightMm", "swing", "confidence", "sourcePolygon"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "enum": ["door", "window"] },
+        "wallId": { "type": ["string", "null"] },
+        "offset": { "type": ["number", "null"], "minimum": 0 },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "heightMm": { "type": "number", "exclusiveMinimum": 0 },
+        "sillHeightMm": { "type": ["number", "null"], "minimum": 0 },
+        "swing": { "enum": ["left", "right", "unknown"] },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "sourcePolygon": { "type": "array", "items": { "$ref": "#/$defs/point" } }
+      },
+      "additionalProperties": false
+    },
+    "room": {
+      "type": "object",
+      "required": ["id", "name", "categoryId", "nodeIds", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "categoryId": { "type": ["integer", "null"] },
+        "nodeIds": { "type": "array", "minItems": 3, "items": { "type": "string" } },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["id", "severity", "code", "message", "entityId"],
+      "properties": {
+        "id": { "type": "string" },
+        "severity": { "enum": ["info", "warning", "error"] },
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "entityId": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}
